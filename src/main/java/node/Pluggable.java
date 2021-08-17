@@ -10,10 +10,6 @@ public class Pluggable {
     // The name of the plugin.
     private String name;
 
-    // TODO
-    //The config parameters for this plugin.
-    //Params *PluginParams
-    private PluginParams pluginParams;
 
     // TODO
     // The function to call to initialize the plugin dependencies.
