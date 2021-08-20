@@ -2,8 +2,10 @@ package configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final class Configuration {
+public class Configuration {
+
     public RestAPI restAPI;
     public Dashboard dashboard;
     public Db db;
@@ -29,7 +31,7 @@ public final class Configuration {
         return restAPI;
     }
 
-    public void setRestAPI(RestAPI restAPI) {
+    public void setRestAPI(final RestAPI restAPI) {
         this.restAPI = restAPI;
     }
 
@@ -37,7 +39,7 @@ public final class Configuration {
         return dashboard;
     }
 
-    public void setDashboard(Dashboard dashboard) {
+    public void setDashboard(final Dashboard dashboard) {
         this.dashboard = dashboard;
     }
 
@@ -45,7 +47,7 @@ public final class Configuration {
         return db;
     }
 
-    public void setDb(Db db) {
+    public void setDb(final Db db) {
         this.db = db;
     }
 
@@ -53,7 +55,7 @@ public final class Configuration {
         return snapshots;
     }
 
-    public void setSnapshots(Snapshots snapshots) {
+    public void setSnapshots(final Snapshots snapshots) {
         this.snapshots = snapshots;
     }
 
@@ -61,7 +63,7 @@ public final class Configuration {
         return pruning;
     }
 
-    public void setPruning(Pruning pruning) {
+    public void setPruning(final Pruning pruning) {
         this.pruning = pruning;
     }
 
@@ -69,7 +71,7 @@ public final class Configuration {
         return protocol;
     }
 
-    public void setProtocol(Protocol protocol) {
+    public void setProtocol(final Protocol protocol) {
         this.protocol = protocol;
     }
 
@@ -77,7 +79,7 @@ public final class Configuration {
         return pow;
     }
 
-    public void setPow(Pow pow) {
+    public void setPow(final Pow pow) {
         this.pow = pow;
     }
 
@@ -85,7 +87,7 @@ public final class Configuration {
         return requests;
     }
 
-    public void setRequests(Requests requests) {
+    public void setRequests(final Requests requests) {
         this.requests = requests;
     }
 
@@ -93,7 +95,7 @@ public final class Configuration {
         return receipts;
     }
 
-    public void setReceipts(Receipts receipts) {
+    public void setReceipts(final Receipts receipts) {
         this.receipts = receipts;
     }
 
@@ -101,7 +103,7 @@ public final class Configuration {
         return tangle;
     }
 
-    public void setTangle(Tangle tangle) {
+    public void setTangle(final Tangle tangle) {
         this.tangle = tangle;
     }
 
@@ -109,7 +111,7 @@ public final class Configuration {
         return tipsel;
     }
 
-    public void setTipsel(Tipsel tipsel) {
+    public void setTipsel(final Tipsel tipsel) {
         this.tipsel = tipsel;
     }
 
@@ -117,7 +119,7 @@ public final class Configuration {
         return node;
     }
 
-    public void setNode(Node node) {
+    public void setNode(final Node node) {
         this.node = node;
     }
 
@@ -125,7 +127,7 @@ public final class Configuration {
         return p2p;
     }
 
-    public void setP2p(P2p p2p) {
+    public void setP2p(final P2p p2p) {
         this.p2p = p2p;
     }
 
@@ -133,7 +135,7 @@ public final class Configuration {
         return logger;
     }
 
-    public void setLogger(Logger logger) {
+    public void setLogger(final Logger logger) {
         this.logger = logger;
     }
 
@@ -141,7 +143,7 @@ public final class Configuration {
         return warpsync;
     }
 
-    public void setWarpsync(Warpsync warpsync) {
+    public void setWarpsync(final Warpsync warpsync) {
         this.warpsync = warpsync;
     }
 
@@ -149,7 +151,7 @@ public final class Configuration {
         return spammer;
     }
 
-    public void setSpammer(Spammer spammer) {
+    public void setSpammer(final Spammer spammer) {
         this.spammer = spammer;
     }
 
@@ -157,7 +159,7 @@ public final class Configuration {
         return mqtt;
     }
 
-    public void setMqtt(Mqtt mqtt) {
+    public void setMqtt(final Mqtt mqtt) {
         this.mqtt = mqtt;
     }
 
@@ -165,7 +167,7 @@ public final class Configuration {
         return profiling;
     }
 
-    public void setProfiling(Profiling profiling) {
+    public void setProfiling(final Profiling profiling) {
         this.profiling = profiling;
     }
 
@@ -173,7 +175,7 @@ public final class Configuration {
         return prometheus;
     }
 
-    public void setPrometheus(Prometheus prometheus) {
+    public void setPrometheus(final Prometheus prometheus) {
         this.prometheus = prometheus;
     }
 
@@ -181,7 +183,7 @@ public final class Configuration {
         return debug;
     }
 
-    public void setDebug(Debug debug) {
+    public void setDebug(final Debug debug) {
         this.debug = debug;
     }
 }
