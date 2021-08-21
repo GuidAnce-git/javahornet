@@ -1,4 +1,4 @@
-package Database;
+package database;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.apache.commons.io.IOUtils;

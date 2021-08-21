@@ -1,4 +1,4 @@
-package Database;
+package database;
 
 
 import redis.clients.jedis.HostAndPort;
@@ -21,7 +21,6 @@ public class RedisDB {
     static boolean save(final String key, final String value) {
         try (final Jedis jedis = jedisPool.getResource()) {
             jedis.set(key, value);
-            //LOGGER.info("saved: " + key + " - " + value);
             return true;
         } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "Save to RedisDB failed.", e);
