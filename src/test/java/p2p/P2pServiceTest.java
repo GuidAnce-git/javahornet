@@ -15,21 +15,30 @@ class P2pServiceTest {
 
     @Test
     void testPingPorts() {
-        final Host host = new HostBuilder().protocol(new Ping()).listen("/ip4/127.0.0.1/tcp/15611").build();
+        Host node = new HostBuilder().protocol(new Ping()).listen("/ip4/127.0.0.1/tcp/16600").build();
 
+        // start listening
         try {
-            host.start().get();
-            final Multiaddr address = Multiaddr.fromString("/ip4/127.0.0.1/tcp/15600/ipfs/Qmdmp2Do626aab3vyov9VBs2ECQk3zdd61BMhetVxWakVP");
-            final PingController pinger = new Ping().dial(host, address).getController().get();
-            System.out.println("Sending 5 ping messages to " + address);
-            for (int i = 1; i <= 5; ++i) {
-                final long latency = pinger.ping().get();
-                System.out.println("Ping " + i + ", latency " + latency + "ms");
-            }
-            host.stop().get();
-        } catch (final InterruptedException | ExecutionException e) {
+            node.start().get();
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+
+
+        Multiaddr multiaddr = Multiaddr.fromString("/ip4/127.0.0.1/tcp/15600/ipfs/QmX87joyyc1hVxsrWEwtvi2ZxLfFC29ryrzD9aJ3KU6a6i");
+
+        try {
+            PingController pinger = new Ping().dial(node, multiaddr).getController().get();
+            System.out.println("Sending 5 ping messages to " + multiaddr.toString());
+            for (int i = 1; i <= 5; ++i) {
+                long latency = pinger.ping().get();
+                System.out.println("Ping " + i + ", latency " + latency + "ms");
+            }
+
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
 
     }
 

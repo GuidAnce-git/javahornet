@@ -1,0 +1,6 @@
+XX handshake (peers exchange public keys and perform Diffie-Hellman exchanges)
+ChaChaPoly
+Distinct Noise and Identity Keys
+
+
+12D3KooWD3eckifWpRn9wQpMG9R9hX3sD158z7EqHWmweQAJU5SA -- Peer ID (ed25519, using the "identity" multihash) encoded as a raw base58btc multihash.

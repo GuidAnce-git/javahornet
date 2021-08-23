@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+message NoiseHandshakePayload {
+  required bytes identity_key = 1;
+  required bytes identity_sig = 2;
+  required bytes data = 3;
+}

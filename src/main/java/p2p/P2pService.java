@@ -1,22 +1,25 @@
 package p2p;
 
-import io.ipfs.api.IPFS;
 import io.libp2p.core.Host;
 import io.libp2p.core.dsl.HostBuilder;
-import io.libp2p.core.multiformats.Multiaddr;
-import io.libp2p.protocol.Ping;
-import io.libp2p.protocol.PingController;
+import io.libp2p.protocol.Identify;
+import io.libp2p.security.noise.NoiseXXSecureChannel;
+import io.libp2p.transport.tcp.TcpTransport;
+import io.quarkus.runtime.Startup;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
+import p2p.githubtest.Libp2pNetwork;
+import p2p.noise.protocol.HandshakeState;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -25,9 +28,26 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-@ApplicationScoped
+@Singleton
+@Startup
 public class P2pService {
     private static final Logger LOGGER = Logger.getLogger("P2pService");
+
+    Libp2pNetwork network;
+
+    public P2pService() {
+        start();
+    }
+
+    public void start() {
+        network = new Libp2pNetwork();
+        network.start();
+    }
+
+    public void stop() {
+        network.stop();
+        LOGGER.info("P2P Service stopped.");
+    }
 
 
     public static void init() {
@@ -101,9 +121,8 @@ public class P2pService {
                     socket.write("\u0013/multistream/1.0.0\n" +
                             "\u001D/libp2p/simultaneous-connect\n" +
                             "\u0007/noise\n");
-                }
 
-                if (connectionParameterMap.containsKey("select")) {
+                } else if (connectionParameterMap.containsKey("select")) {
                     LOGGER.info("Received select package from " + socket.remoteAddress());
                     System.out.println("Sender ID: " + connectionParameterMap.get("select"));
                     long ownId = 1L;
@@ -137,16 +156,11 @@ public class P2pService {
                     System.out.println(Arrays.toString(combined2));
 
                      */
-                }
-
-                // TODO
-                if (connectionParameterMap.containsKey("nitiator")) {
+                } else if (connectionParameterMap.containsKey("nitiator")) {
                     LOGGER.info("Received initiator package from " + socket.remoteAddress());
                     String responseAsString = "\nresponder\n";
                     socket.write(responseAsString);
-                }
-
-                if (connectionParameterMap.containsKey("noise") && connectionParameterMap.size() == 1) {
+                } else if (connectionParameterMap.containsKey("noise") && connectionParameterMap.size() == 1) {
                     LOGGER.info("Received noise package from " + socket.remoteAddress());
                     String response = "/noise\n";
                     // Byte conversion to make peer happy
@@ -159,7 +173,32 @@ public class P2pService {
                     String responseAsString = new String(combined, StandardCharsets.UTF_8);
 
                     socket.write(responseAsString);
+
+
+                } else {
+
+                    try {
+                        HandshakeState handshakeState = new HandshakeState("Noise_XX_25519_ChaChaPoly_BLAKE2s", 2);
+                        handshakeState.setPrologue(buffer.getBytes(), 1, 1);
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    /*
+                    try {
+                        NoiseHandshakePayloadProtos.NoiseHandshakePayload noiseHandshakePayload = NoiseHandshakePayloadProtos.NoiseHandshakePayload.newBuilder().mergeFrom(buffer.getBytes()).build();
+                    } catch (InvalidProtocolBufferException e) {
+                        e.printStackTrace();
+                    }
+
+                     */
                 }
+
+
+
+
+
 
                 /*
                 String test = "\u0000 \fS+�(��O�d\f!&�l��~ֳ��پ<���\u007F\n" +
@@ -182,63 +221,28 @@ public class P2pService {
     }
 
 
-    public static void nextStep() {
+    public static void libP2P() {
 
         try {
-            // Create a libp2p node and configure it to accept TCP connections on a random port
-            final Host host = new HostBuilder().protocol(new Ping()).listen("/ip4/192.168.178.52/tcp/15600").build();
+            String localListenAddress = "/ip4/127.0.0.1/tcp/15600";
+            InetAddress inetAddress = InetAddress.getByName("172.0.0.1");
 
+            Host host = new HostBuilder()
+                    .transport(TcpTransport::new)
+                    .secureChannel(NoiseXXSecureChannel::new)
+                    .protocol(new Identify())
+                    .listen(localListenAddress)
+                    .build();
 
-            // start listening
-            host.start().get();
-            System.out.println(host.getPeerId().toBase58());
-            //peerFinder = new MDnsDiscovery(host, "test", 1, privateAddress);
-            //peerFinder.start().get();
-            LOGGER.info("Node started and listening on " + host.listenAddresses());
-
-
-            //host.stop().get();
-
-        } catch (final InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-        System.out.println("test");
-
-    }
-
-    public static void pingTest() {
-        final Host host = new HostBuilder().protocol(new Ping()).listen("/ip4/127.0.0.1/tcp/15600").build();
-
-        try {
             host.start().get();
 
-            final Multiaddr address = Multiaddr.fromString("/ip4/127.0.0.1/tcp/15600/ipfs/" + host.getPeerId());
 
-            final PingController pinger = new Ping().dial(host, address).getController().get();
-            System.out.println("Sending 5 ping messages to " + address);
-            for (int i = 1; i <= 5; ++i) {
-                final long latency = pinger.ping().get();
-                System.out.println("Ping " + i + ", latency " + latency + "ms");
-            }
-
-            host.stop().get();
-        } catch (final InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException | UnknownHostException e) {
             e.printStackTrace();
         }
 
-        System.out.println("Node started and listening on ");
-        System.out.println(host.listenAddresses());
-
     }
 
-    public static void testIpfs() {
-        final IPFS ipfs = new IPFS("/ip4/127.0.0.1/tcp/15600");
-        try {
-            ipfs.refs.local();
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private static InetAddress privateNetworkAddress() {
 
