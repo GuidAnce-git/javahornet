@@ -24,7 +24,6 @@ public class P2pService {
 
         libp2pNetwork = new Libp2pNetwork(listenPort, prikey);
         libp2pNetwork.start();
-        libp2pNetwork.getPeerCount();
         LOGGER.info("P2P Service started.");
     }
 

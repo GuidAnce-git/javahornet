@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 public interface GossipController {
     CompletableFuture<String> chat(String msg);
 
-    CompletableFuture<String> send(String msg);
+    void heartbeat();
 }
 
 

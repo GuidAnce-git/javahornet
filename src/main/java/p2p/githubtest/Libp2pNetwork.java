@@ -88,6 +88,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
             return SafeFuture.failedFuture(new IllegalStateException("Network already started"));
         }
         LOGGER.info("Starting libp2p network...");
+
         return SafeFuture.of(host.start())
                 .thenApply(
                         i -> {

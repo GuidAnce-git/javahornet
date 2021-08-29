@@ -27,8 +27,6 @@ public class AppLifecycleBean {
 
     void onStop(@Observes final ShutdownEvent ev) {
         LOGGER.info("The application is stopping...");
-        p2pService.stop();
-
         // TODO
         // //shutdown peer manager (ScheduledExecutorService scheduler)
     }
