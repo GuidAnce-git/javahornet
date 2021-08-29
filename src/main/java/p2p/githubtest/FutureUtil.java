@@ -1,15 +1,15 @@
 package p2p.githubtest;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import p2p.githubtest.utils.ExceptionThrowingRunnable;
 
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FutureUtil {
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOGGER = Logger.getLogger("P2pService");
 
     public static <T> void ignoreFuture(final Future<T> future) {
     }
@@ -31,7 +31,7 @@ public class FutureUtil {
                                     try {
                                         exceptionHandler.accept(throwable);
                                     } catch (Exception e) {
-                                        LOG.warn("Exception in exception handler", e);
+                                        LOGGER.log(Level.WARNING, "Exception in exception handler", e);
                                     }
                                 } finally {
                                     runWithFixedDelay(runner, runnable, task, duration, exceptionHandler);

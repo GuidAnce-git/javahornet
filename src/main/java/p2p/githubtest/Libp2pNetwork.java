@@ -16,59 +16,58 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.time.Duration;
+import java.net.*;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static p2p.githubtest.SafeFuture.failedFuture;
 
-
-/**
- * description: ChatNode <br>
- *
- * @author xie hui <br>
- * @version 1.0 <br>
- * @date 2020/9/8 18:43 <br>
- */
 public class Libp2pNetwork implements P2PNetwork<Peer> {
     private static final Logger LOGGER = Logger.getLogger("Libp2pNetwork");
 
-
+    PeerManager peerManager;
     private final Host host;
     private final PrivKey privKeyBytes;
     private final NodeId nodeId;
-
     private InetAddress privateAddress;
-    PeerManager peerManager;
+    private final int listenPort;
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
-    int listenPort = 15600;
     private final Multiaddr advertisedAddr;
-    public HandlerT handlerT = new HandlerT();
 
-    public Libp2pNetwork() {
-        try {
-            privateAddress = InetAddress.getByName("192.168.178.52");
-        } catch (UnknownHostException e) {
+
+    public Libp2pNetwork(int port, String privateKey) {
+
+        // getting local IP
+        try (final DatagramSocket socket = new DatagramSocket()) {
+            socket.connect(InetAddress.getByName("8.8.8.8"), 80);
+            privateAddress = InetAddress.getByName(socket.getLocalAddress().getHostAddress());
+            LOGGER.info("Local IP address set: " + privateAddress);
+        } catch (SocketException | UnknownHostException e) {
+            LOGGER.log(Level.SEVERE, "Getting local IP address failed", e);
             e.printStackTrace();
         }
+
+        //set port
+        listenPort = port;
+
+        // init peer manager in single thread
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setDaemon(true).setNameFormat("libp2p-%d").build());
         peerManager = new PeerManager(scheduler);
-        // host = new HostBuilder().protocol(handlerT).secureChannel(NoiseXXSecureChannel::new).listen("/ip4/" + privateAddress.getHostAddress() + "/tcp/" + listenPort).build();
-//        String prikey = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b894b5";
-        String prikey = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
-        Bytes pub = Bytes.fromHexString(prikey);
+
+        // generate node ID
+        Bytes pub = Bytes.fromHexString(privateKey);
         privKeyBytes = KeyKt.unmarshalPrivateKey(pub.toArrayUnsafe());
         nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKeyBytes.publicKey()));
-        advertisedAddr = MultiaddrUtil.fromInetSocketAddress(new InetSocketAddress(privateAddress, listenPort), nodeId);
         LOGGER.info("P2P Node ID = " + nodeId);
+
+        advertisedAddr = MultiaddrUtil.fromInetSocketAddress(new InetSocketAddress(privateAddress, listenPort), nodeId);
+
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b -> {
                     b.getIdentity().setFactory(() -> privKeyBytes);
@@ -76,12 +75,9 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
                     b.getSecureChannels().add(NoiseXXSecureChannel::new);
                     b.getMuxers().add(StreamMuxerProtocol.getMplex());
                     b.getNetwork().listen(advertisedAddr.toString());
-                    b.getProtocols().add(handlerT);
+                    b.getProtocols().add(new Gossip());
                     b.getDebug().getBeforeSecureHandler().addLogger(LogLevel.DEBUG, "wire.ciphered");
-                    Firewall firewall = new Firewall(Duration.ofSeconds(30));
-                    b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
                     b.getDebug().getMuxFramesHandler().addLogger(LogLevel.DEBUG, "wire.mux");
-
                     b.getConnectionHandlers().add(peerManager);
                 });
     }
@@ -111,11 +107,6 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
                                         new IllegalArgumentException()));
     }
 
-    public void connect1(String peer) {
-        Multiaddr address = Multiaddr.fromString(peer);
-        handlerT.dial(host, address);
-    }
-
 
     /**
      * Parses a peer address in any of this network's supported formats.
@@ -126,10 +117,6 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
      */
     @Override
     public PeerAddress createPeerAddress(final String peerAddress) {
-        return MultiaddrPeerAddress.fromAddress(peerAddress);
-    }
-
-    public MultiaddrPeerAddress createPeerAddress1(final String peerAddress) {
         return MultiaddrPeerAddress.fromAddress(peerAddress);
     }
 
@@ -296,5 +283,13 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
          */
         BigInteger bigInteger = new BigInteger(1, bytes);
         return bigInteger.toString(16);
+    }
+
+    public PeerManager getPeerManager() {
+        return peerManager;
+    }
+
+    public void setPeerManager(PeerManager peerManager) {
+        this.peerManager = peerManager;
     }
 }

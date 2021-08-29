@@ -32,22 +32,20 @@ public class Handler implements ProtocolBinding<Handler.Controller> {
     }
 
     public Handler() {
+
     }
 
     @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
-        return new ProtocolDescriptor("xdagj");
+        return new ProtocolDescriptor("iota-gossip");
     }
-//teku
+
 
     @NotNull
     @Override
     public SafeFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-        System.out.println("initChannel212121");
-//        final Connection connection = ((Stream) p2PChannel).getConnection();
-//        final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
-
+        System.out.println("init iota-gossip Channel");
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         Controller controller = new Controller(nodeId, p2PChannel);
@@ -55,13 +53,11 @@ public class Handler implements ProtocolBinding<Handler.Controller> {
         if (!p2PChannel.isInitiator()) {
             System.out.println("fial");
         }
-//        p2PChannel.pushHandler(xdagBlockHandler);
         p2PChannel.pushHandler(controller);
         return controller.activeFuture;
     }
 
 
-    //Xdag03
     static class Controller extends SimpleChannelInboundHandler<ByteBuf> {
 
         final NodeId nodeid;
@@ -94,4 +90,6 @@ public class Handler implements ProtocolBinding<Handler.Controller> {
             System.out.println(s);
         }
     }
+
+
 }

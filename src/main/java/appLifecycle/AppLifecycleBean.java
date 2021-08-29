@@ -23,13 +23,13 @@ public class AppLifecycleBean {
 
     void onStart(@Observes final StartupEvent ev) {
         LOGGER.info("The application is starting...");
-
-
     }
 
     void onStop(@Observes final ShutdownEvent ev) {
-
         LOGGER.info("The application is stopping...");
         p2pService.stop();
+
+        // TODO
+        // //shutdown peer manager (ScheduledExecutorService scheduler)
     }
 }

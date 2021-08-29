@@ -22,25 +22,20 @@ public class HandlerT implements ProtocolBinding<HandlerT.Controller> {
     private Controller controller;
     final CompletableFuture<Handler> activeFuture = new CompletableFuture<>();
 
-    public HandlerT(String announce, Controller controller) {
-        this.announce = announce;
-        this.controller = controller;
-    }
-
     public HandlerT() {
     }
 
     @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
-        return new ProtocolDescriptor("xdagj");
+        return new ProtocolDescriptor("iota-gossip");
     }
 
     //teku
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-        System.out.println("initChannel212121");
+        System.out.println("init iota-gossip Channel");
         final Connection connection = ((Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         Controller controller = new Controller(nodeId, p2PChannel);
@@ -76,7 +71,7 @@ public class HandlerT implements ProtocolBinding<HandlerT.Controller> {
 
         //ByteBuf 是接受的对象
         @Override
-        protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) throws Exception {
+        protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) {
             System.out.println("channelRead0");
             String s = buf.toString(CharsetUtil.UTF_8);
             System.out.println(s);

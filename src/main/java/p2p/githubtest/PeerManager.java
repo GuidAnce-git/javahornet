@@ -15,21 +15,20 @@ import java.util.stream.Stream;
 public class PeerManager implements ConnectionHandler {
     private static final Logger LOGGER = Logger.getLogger("PeerManager");
 
-
     private final ConcurrentHashMap<NodeId, Peer> connectedPeerMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<NodeId, SafeFuture<Peer>> pendingConnections =
-            new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<NodeId, SafeFuture<Peer>> pendingConnections = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
 
     public PeerManager(ScheduledExecutorService scheduler) {
         this.scheduler = scheduler;
     }
 
+
     @Override
     public void handleConnection(@NotNull final Connection connection) {
         final PeerId remoteId = connection.secureSession().getRemoteId();
-        LOGGER.severe("Got new connection from " + remoteId);
-        connection.closeFuture().thenRun(() -> LOGGER.severe("Peer disconnected: " + remoteId));
+        LOGGER.info("Got new connection from " + remoteId);
+        connection.closeFuture().thenRun(() -> LOGGER.info("Peer disconnected: " + remoteId));
 
     }
 
@@ -38,7 +37,7 @@ public class PeerManager implements ConnectionHandler {
     }
 
     private SafeFuture<Peer> doConnect(final MultiaddrPeerAddress peer, final Network network) {
-        LOGGER.severe(String.format("Connecting to {%s}", peer));
+        LOGGER.info(String.format("Connecting to {%s}", peer));
         LOGGER.info("network = " + network.toString());
 
         return SafeFuture.of(() -> network.connect(peer.getMultiaddr()))
@@ -46,8 +45,7 @@ public class PeerManager implements ConnectionHandler {
                         connection -> {
                             final LibP2PNodeId nodeId =
                                     new LibP2PNodeId(connection.secureSession().getRemoteId());
-                            final Peer connectedPeer = connectedPeerMap.get(nodeId);
-                            return connectedPeer;
+                            return connectedPeerMap.get(nodeId);
                         })
                 .whenComplete((result, error) -> pendingConnections.remove(peer.getId()));
     }
@@ -62,5 +60,17 @@ public class PeerManager implements ConnectionHandler {
 
     public Stream<Peer> streamPeers() {
         return connectedPeerMap.values().stream();
+    }
+
+    public ScheduledExecutorService getScheduler() {
+        return scheduler;
+    }
+
+    public ConcurrentHashMap<NodeId, Peer> getConnectedPeerMap() {
+        return connectedPeerMap;
+    }
+
+    public ConcurrentHashMap<NodeId, SafeFuture<Peer>> getPendingConnections() {
+        return pendingConnections;
     }
 }

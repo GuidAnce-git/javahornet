@@ -6,15 +6,14 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 @ChannelHandler.Sharable
 public class Firewall extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOGGER = Logger.getLogger("Firewall");
 
     private final Duration writeTimeout;
 
@@ -37,11 +36,11 @@ public class Firewall extends ChannelInboundHandlerAdapter {
 
     class FirewallExceptionHandler extends ChannelInboundHandlerAdapter {
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             if (cause instanceof WriteTimeoutException) {
-                LOG.debug("Firewall closed channel by write timeout. No writes during " + writeTimeout);
+                LOGGER.severe("Firewall closed channel by write timeout. No writes during " + writeTimeout);
             } else {
-                LOG.debug("Error in Firewall, disconnecting" + cause);
+                LOGGER.severe("Error in Firewall, disconnecting" + cause);
                 FutureUtil.ignoreFuture(ctx.close());
             }
         }
