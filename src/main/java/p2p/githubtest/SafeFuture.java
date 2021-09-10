@@ -317,7 +317,7 @@ public class SafeFuture<T> extends CompletableFuture<T> {
      * @param errorHandler the function returning a new CompletionStage
      * @return the SafeFuture
      */
-    @Override
+    
     public SafeFuture<T> exceptionallyCompose(
             final Function<Throwable, ? extends CompletionStage<T>> errorHandler) {
         final SafeFuture<T> result = new SafeFuture<>();
@@ -612,4 +612,5 @@ public class SafeFuture<T> extends CompletableFuture<T> {
             return exceptionSupplier;
         }
     }
+
 }

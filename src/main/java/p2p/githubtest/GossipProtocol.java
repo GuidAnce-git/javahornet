@@ -1,5 +1,6 @@
 package p2p.githubtest;
 
+import com.google.common.base.Charsets;
 import io.libp2p.core.Stream;
 import io.libp2p.protocol.ProtocolHandler;
 import io.libp2p.protocol.ProtocolMessageHandler;
@@ -13,13 +14,9 @@ import p2p.githubtest.message.Type;
 import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class GossipProtocol extends ProtocolHandler<GossipController> {
     private static final Logger LOGGER = Logger.getLogger("GossipProtocol");
@@ -27,12 +24,8 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
     @Inject
     HeartbeatMsg heartbeat;
 
-    static ScheduledExecutorService heartbeatScheduler = Executors.newScheduledThreadPool(1);
-
-
     private final CompletableFuture<GossipController> completableFuture = new CompletableFuture<>();
     private final GossipHandler gossipHandler = new GossipHandler(completableFuture);
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GossipProtocol(long initiatorTrafficLimit, long responderTrafficLimit) {
         super(initiatorTrafficLimit, responderTrafficLimit);
@@ -57,6 +50,8 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
     public static class GossipHandler implements ProtocolMessageHandler<ByteBuf>, GossipController {
         CompletableFuture<GossipController> completableFuture;
         private Stream stream;
+        private ScheduledFuture<?> scheduledFuture;
+        private ScheduledExecutorService heartbeatScheduler;
 
         public GossipHandler(CompletableFuture<GossipController> completableFuture) {
             this.completableFuture = completableFuture;
@@ -64,9 +59,9 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
 
         @Override
         public void onMessage(@NotNull Stream stream, ByteBuf msg) {
-            String msgStr = msg.toString();
-            // LOGGER.info("GossipHandler onMessage, remote peerId :" + stream.remotePeerId() + " , msg :" + msgStr);
-            // LOGGER.info("GossipHandler onMessage, remote peerId :" + stream.remotePeerId());
+            String msgStr = msg.toString(Charsets.UTF_8);
+            LOGGER.info("GossipHandler onMessage, remote peerId :" + stream.remotePeerId() + " , msg :" + msgStr);
+            //LOGGER.info("GossipHandler onMessage, remote peerId :" + stream.remotePeerId());
 
         }
 
@@ -78,20 +73,19 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
 
         @Override
         public void onClosed(@NotNull Stream stream) {
-            heartbeatScheduler.shutdown();
             LOGGER.info("GossipHandler onClosed");
+            heartbeatScheduler.shutdown();
+            scheduledFuture.cancel(true);
         }
 
         @Override
         public void onActivated(@NotNull Stream stream) {
             LOGGER.info("GossipHandler onActivated");
-
-
             this.stream = stream;
 
-            Runnable heartbeatThread = this::heartbeat;
-            heartbeatScheduler.scheduleAtFixedRate(heartbeatThread, 0, 5, SECONDS);
-
+            heartbeatScheduler = Executors.newScheduledThreadPool(1);
+            Runnable heartbeat = this::heartbeat;
+            scheduledFuture = heartbeatScheduler.scheduleAtFixedRate(heartbeat, 0, 30, TimeUnit.SECONDS);
 
             completableFuture.complete(this);
         }
@@ -114,60 +108,38 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
 
         @Override
         public void heartbeat() {
+
             Message message = new Message();
             message.setId(new Type((byte) 4));
             message.setMaxBytesLength(Message.heartbeatMilestoneIndexBytesLength * 3 + 2);
             message.setVariableLength(false);
 
-            int solidMilestoneIndex = 1066249;
-            int prunedMilestoneIndex = 1066249;
-            int latestMilestoneIndex = 1066249;
-            int connectedPeers = 0;
-            int syncedPeers = 0;
+            int solidMilestoneIndex = 1067599;
+            int prunedMilestoneIndex = 1067599;
+            int latestMilestoneIndex = 1067599;
+            byte connectedPeers = 0;
+            byte syncedPeers = 0;
             int headerMessageDefinitionMaxBytesLength = 3;
-            int heartbeatMessageDefinitionMaxBytesLength = 14;
+
 
             byte[] header = new byte[headerMessageDefinitionMaxBytesLength];
-            byte[] b = new byte[message.getMaxBytesLength()];
 
             // create header
             header[0] = message.getId().getType();
-            header[1] = (byte) heartbeatMessageDefinitionMaxBytesLength;
+            header[1] = (byte) message.getMaxBytesLength();
 
-            /*
-            0 = {uint8} 4
-            1 = {uint8} 14
-            2 = {uint8} 0
-            3 = {uint8} 79
-            4 = {uint8} 74
-            5 = {uint8} 16
-            6 = {uint8} 0
-            7 = {uint8} 79
-            8 = {uint8} 74
-            9 = {uint8} 16
-            10 = {uint8} 0
-            11 = {uint8} 79
-            12 = {uint8} 74
-            13 = {uint8} 16
-            14 = {uint8} 0
-            15 = {uint8} 0
-            16 = {uint8} 0
-             */
+            ByteBuffer byteBuffer = ByteBuffer.allocate(headerMessageDefinitionMaxBytesLength + message.getMaxBytesLength()).order(ByteOrder.LITTLE_ENDIAN);
+            byteBuffer.put(header, 0, headerMessageDefinitionMaxBytesLength);
+            byteBuffer.putInt(solidMilestoneIndex);
+            byteBuffer.putInt(prunedMilestoneIndex);
+            byteBuffer.putInt(latestMilestoneIndex);
+            byteBuffer.put(connectedPeers);
+            byteBuffer.put(syncedPeers);
 
-
-            long l1 = 1066249L;
-            byte[] bytes1 = ByteBuffer.allocate(32).order(ByteOrder.LITTLE_ENDIAN)
-                    .putInt(1066249)
-                    .putInt(1066249)
-                    .putInt(1066249)
-                    .putInt(0)
-                    .putInt(0)
-                    .array();
-
-
-            ByteBuf data = Unpooled.wrappedBuffer(header, bytes1);
+            ByteBuf data = Unpooled.wrappedBuffer(byteBuffer.array());
             stream.writeAndFlush(data);
-            LOGGER.info("heartbeat sent");
+
+            LOGGER.info("heartbeat sent to " + stream.remotePeerId());
 
         }
     }
