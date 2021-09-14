@@ -5,6 +5,7 @@ import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
+import io.libp2p.core.crypto.PubKey;
 import io.libp2p.core.dsl.Builder;
 import io.libp2p.core.dsl.BuilderJKt;
 import io.libp2p.core.multiformats.Multiaddr;
@@ -12,6 +13,7 @@ import io.libp2p.core.mux.StreamMuxerProtocol;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import io.netty.handler.logging.LogLevel;
+import kotlin.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -33,6 +35,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
     PeerManager peerManager;
     private final Host host;
     private final PrivKey privKeyBytes;
+    private Pair<PrivKey, PubKey> pair;
     private final NodeId nodeId;
     private InetAddress privateAddress;
     private final int listenPort;
@@ -63,6 +66,9 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         // generate node ID
         Bytes pub = Bytes.fromHexString(privateKey);
         privKeyBytes = KeyKt.unmarshalPrivateKey(pub.toArrayUnsafe());
+        // pair = KeyKt.generateKeyPair(KEY_TYPE.ED25519);
+        // nodeId = new LibP2PNodeId(PeerId.fromPubKey(pair.getSecond()));
+
         nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKeyBytes.publicKey()));
         LOGGER.info("P2P Node ID = " + nodeId);
 

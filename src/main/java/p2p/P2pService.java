@@ -20,9 +20,13 @@ public class P2pService {
 
     public void start() {
         int listenPort = 15600;
-        String prikey = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
+        // String prikey = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
 
-        libp2pNetwork = new Libp2pNetwork(listenPort, prikey);
+        String privateKey = "08011220433011af52a2ea86310c867f36530b48976484485991c014f7ec5e60f573b3fd";
+        String publicKey = "080112203085e9ca8726033c643ede8cc66ccb9fd7c574a1f6ed596d543f8c216081f535";
+
+
+        libp2pNetwork = new Libp2pNetwork(listenPort, privateKey);
         libp2pNetwork.start();
         LOGGER.info("P2P Service started.");
     }

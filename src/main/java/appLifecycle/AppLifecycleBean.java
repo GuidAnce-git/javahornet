@@ -20,6 +20,8 @@ public class AppLifecycleBean {
     @Inject
     P2pService p2pService;
 
+    // /dns/lzimj7afpf8f2amh.myfritz.net/tcp/15600
+    // 16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy
 
     void onStart(@Observes final StartupEvent ev) {
         LOGGER.info("The application is starting...");
