@@ -1,6 +1,8 @@
 package p2p.githubtest;
 
 import com.google.common.base.Charsets;
+import com.rfksystems.blake2b.Blake2b;
+import com.rfksystems.blake2b.security.Blake2bProvider;
 import io.libp2p.core.Stream;
 import io.libp2p.protocol.ProtocolHandler;
 import io.libp2p.protocol.ProtocolMessageHandler;
@@ -8,12 +10,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import p2p.githubtest.message.Message;
-import p2p.githubtest.message.Type;
+import p2p.githubtest.gossip.GossipHeartbeat;
+import p2p.githubtest.gossip.GossipMessage;
 
 import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.Security;
+import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -61,8 +65,13 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
         public void onMessage(@NotNull Stream stream, ByteBuf msg) {
             String msgStr = msg.toString(Charsets.UTF_8);
             LOGGER.info("GossipHandler onMessage, remote peerId :" + stream.remotePeerId() + " , msg :" + msgStr);
-            //LOGGER.info("GossipHandler onMessage, remote peerId :" + stream.remotePeerId());
 
+
+            byte[] result = Arrays.copyOfRange(msg.array(), 0, 8);
+            Security.addProvider(new Blake2bProvider());
+            final Blake2b digest = new Blake2b(result);
+
+            GossipMessage gossipMessage = new GossipMessage();
         }
 
         @Override
@@ -109,10 +118,7 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
         @Override
         public void heartbeat() {
 
-            Message message = new Message();
-            message.setId(new Type((byte) 4));
-            message.setMaxBytesLength(Message.heartbeatMilestoneIndexBytesLength * 3 + 2);
-            message.setVariableLength(false);
+            GossipHeartbeat gossipHeartbeat = new GossipHeartbeat();
 
             int solidMilestoneIndex = 1067599;
             int prunedMilestoneIndex = 1067599;
@@ -125,10 +131,10 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
             byte[] header = new byte[headerMessageDefinitionMaxBytesLength];
 
             // create header
-            header[0] = message.getId().getType();
-            header[1] = (byte) message.getMaxBytesLength();
+            header[0] = gossipHeartbeat.getId();
+            header[1] = (byte) gossipHeartbeat.getMaxBytesLength();
 
-            ByteBuffer byteBuffer = ByteBuffer.allocate(headerMessageDefinitionMaxBytesLength + message.getMaxBytesLength()).order(ByteOrder.LITTLE_ENDIAN);
+            ByteBuffer byteBuffer = ByteBuffer.allocate(headerMessageDefinitionMaxBytesLength + gossipHeartbeat.getMaxBytesLength()).order(ByteOrder.LITTLE_ENDIAN);
             byteBuffer.put(header, 0, headerMessageDefinitionMaxBytesLength);
             byteBuffer.putInt(solidMilestoneIndex);
             byteBuffer.putInt(prunedMilestoneIndex);
@@ -143,4 +149,5 @@ public class GossipProtocol extends ProtocolHandler<GossipController> {
 
         }
     }
+
 }
