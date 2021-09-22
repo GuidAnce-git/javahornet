@@ -1,11 +1,13 @@
 package p2p.githubtest.message.gossip;
 
+import com.rfksystems.blake2b.Blake2b;
+import com.rfksystems.blake2b.security.Blake2bProvider;
+
 import javax.enterprise.context.ApplicationScoped;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.util.Arrays;
-import java.util.List;
 
 @ApplicationScoped
 public class GossipPayloadBA {
@@ -18,89 +20,59 @@ public class GossipPayloadBA {
     private static final byte MESSAGE_TYPE_BYTES_LENGTH = 4;
 
 
-    public void extractMessageId(GossipPayloadDTO gossipPayloadDTO) {
-        if (!gossipPayloadDTO.isNetworkIdSet()
-                && !gossipPayloadDTO.isParentsSet()
-                && !gossipPayloadDTO.isPayloadLengthSet()
-                && !gossipPayloadDTO.isMessageTypeSet()
-                && !gossipPayloadDTO.isPayloadSet()
-                && !gossipPayloadDTO.isNonceSet()) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(Arrays.copyOfRange(gossipPayloadDTO.getData(), 0, MESSAGE_ID_BYTES_LENGTH));
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            gossipPayloadDTO.setNetworkId(byteBuffer.getLong());
-            gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), MESSAGE_ID_BYTES_LENGTH, gossipPayloadDTO.getData().length));
-            gossipPayloadDTO.setNetworkIdSet(true);
+    public void deserialize(GossipPayloadDTO gossipPayloadDTO) {
+        generateMessageHash(gossipPayloadDTO);
+        extractMessageId(gossipPayloadDTO);
+        extractParents(gossipPayloadDTO);
+        extractPayloadLength(gossipPayloadDTO);
+        extractMessageType(gossipPayloadDTO);
+    }
+
+
+    void generateMessageHash(GossipPayloadDTO gossipPayloadDTO) {
+        Security.addProvider(new Blake2bProvider());
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance(Blake2b.BLAKE2_B_256);
+            digest.update(gossipPayloadDTO.getData());
+            gossipPayloadDTO.setMessageHash(digest.digest());
+            gossipPayloadDTO.setMessageId(gossipPayloadDTO.getMessageHash());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         }
     }
 
-    public void extractParents(GossipPayloadDTO gossipPayloadDTO) {
-        if (gossipPayloadDTO.isNetworkIdSet()
-                && !gossipPayloadDTO.isParentsSet()
-                && !gossipPayloadDTO.isPayloadLengthSet()
-                && !gossipPayloadDTO.isMessageTypeSet()
-                && !gossipPayloadDTO.isPayloadSet()
-                && !gossipPayloadDTO.isNonceSet()) {
 
-            List<byte[]> parents = new ArrayList<>();
-            int parentsCount = gossipPayloadDTO.getData()[PARRENTS_BYTE_POSITION];
-            gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), 1, gossipPayloadDTO.getData().length));
-
-            for (int i = 0; i < parentsCount; i++) {
-                parents.add(Arrays.copyOfRange(gossipPayloadDTO.getData(), (PARRENTS_ID_BYTES_LENGTH * i), (PARRENTS_ID_BYTES_LENGTH * i) + PARRENTS_ID_BYTES_LENGTH));
-            }
-
-            gossipPayloadDTO.setParents(parents);
-            gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), PARRENTS_ID_BYTES_LENGTH * parentsCount, gossipPayloadDTO.getData().length));
-            gossipPayloadDTO.setParentsSet(true);
-        }
+    private void extractMessageId(GossipPayloadDTO gossipPayloadDTO) {
+        gossipPayloadDTO.setNetworkId(GossipHelperBA.extractBytesToLong(gossipPayloadDTO.getData(), MESSAGE_ID_BYTES_LENGTH));
+        gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), MESSAGE_ID_BYTES_LENGTH, gossipPayloadDTO.getData().length));
     }
 
-    public void extractPayloadLength(GossipPayloadDTO gossipPayloadDTO) {
-        if (gossipPayloadDTO.isNetworkIdSet()
-                && gossipPayloadDTO.isParentsSet()
-                && !gossipPayloadDTO.isPayloadLengthSet()
-                && !gossipPayloadDTO.isMessageTypeSet()
-                && !gossipPayloadDTO.isPayloadSet()
-                && !gossipPayloadDTO.isNonceSet()) {
 
-            int length = gossipPayloadDTO.getData()[0] & 0xff;
-            length = length + ((gossipPayloadDTO.getData()[1] & 0xff) << 8);
-            length = length + ((gossipPayloadDTO.getData()[2] & 0xff) << 16);
-            length = length + ((gossipPayloadDTO.getData()[3] & 0xff) << 24);
-            gossipPayloadDTO.setPayloadLength(length);
-            gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), PAYLOAD_LENGTH_BYTES_LENGTH, gossipPayloadDTO.getData().length));
-            gossipPayloadDTO.setPayloadLengthSet(true);
-        }
+    private void extractParents(GossipPayloadDTO gossipPayloadDTO) {
+        gossipPayloadDTO.setParents(GossipHelperBA.extractBytesToArray(gossipPayloadDTO.getData(), PARRENTS_BYTE_POSITION, PARRENTS_ID_BYTES_LENGTH));
+        gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), PARRENTS_ID_BYTES_LENGTH * gossipPayloadDTO.getParents().size() + 1, gossipPayloadDTO.getData().length));
     }
 
-    public void extractMessageType(GossipPayloadDTO gossipPayloadDTO) {
-        if (gossipPayloadDTO.isNetworkIdSet()
-                && gossipPayloadDTO.isParentsSet()
-                && gossipPayloadDTO.isPayloadLengthSet()
-                && !gossipPayloadDTO.isMessageTypeSet()
-                && !gossipPayloadDTO.isPayloadSet()
-                && !gossipPayloadDTO.isNonceSet()) {
 
-            gossipPayloadDTO.setMessageType(gossipPayloadDTO.getData()[MESSAGE_TYPE_BYTE_POSITION]);
-            gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), MESSAGE_TYPE_BYTES_LENGTH, gossipPayloadDTO.getData().length));
-            gossipPayloadDTO.setMessageTypeSet(true);
-        }
+    private void extractPayloadLength(GossipPayloadDTO gossipPayloadDTO) {
+        int length = gossipPayloadDTO.getData()[0] & 0xff;
+        length = length + ((gossipPayloadDTO.getData()[1] & 0xff) << 8);
+        length = length + ((gossipPayloadDTO.getData()[2] & 0xff) << 16);
+        length = length + ((gossipPayloadDTO.getData()[3] & 0xff) << 24);
+        gossipPayloadDTO.setPayloadLength(length);
+        gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), PAYLOAD_LENGTH_BYTES_LENGTH, gossipPayloadDTO.getData().length));
     }
 
-    public void extractPayload(GossipPayloadDTO gossipPayloadDTO) {
-        if (gossipPayloadDTO.isNetworkIdSet()
-                && gossipPayloadDTO.isParentsSet()
-                && gossipPayloadDTO.isPayloadLengthSet()
-                && gossipPayloadDTO.isMessageTypeSet()
-                && !gossipPayloadDTO.isPayloadSet()
-                && !gossipPayloadDTO.isNonceSet()) {
 
-
-            gossipPayloadDTO.setMessageType(gossipPayloadDTO.getData()[MESSAGE_TYPE_BYTE_POSITION]);
-            gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), MESSAGE_TYPE_BYTES_LENGTH, gossipPayloadDTO.getData().length));
-            gossipPayloadDTO.setPayloadSet(true);
-        }
+    private void extractMessageType(GossipPayloadDTO gossipPayloadDTO) {
+        gossipPayloadDTO.setMessageType(gossipPayloadDTO.getData()[MESSAGE_TYPE_BYTE_POSITION]);
+        gossipPayloadDTO.setData(Arrays.copyOfRange(gossipPayloadDTO.getData(), MESSAGE_TYPE_BYTES_LENGTH, gossipPayloadDTO.getData().length));
     }
 
+    
+    public void extractNonce(GossipPayloadDTO gossipPayloadDTO) {
+        gossipPayloadDTO.setNonce(GossipHelperBA.extractBytesToLong(gossipPayloadDTO.getData(), gossipPayloadDTO.getData().length));
+    }
 
 }

@@ -6,15 +6,28 @@ import java.util.List;
 
 @ApplicationScoped
 public class IotaMessageMilestoneDTO {
-    int index;
-    long timestamp;
-    List<byte[]> parents;
-    byte[] inclusionMerkleProof;
-    int nextPoWScore;
-    int nextPoWScoreMilestoneIndex;
-    List<byte[]> publicKeys;
-    byte[] receipt;
-    List<byte[]> signatures;
+    private byte[] data;
+    private int index;
+    private long timestamp;
+    private List<byte[]> parents;
+    private byte[] inclusionMerkleProof;
+    private int nextPoWScore;
+    private int nextPoWScoreMilestoneIndex;
+    private List<byte[]> publicKeys;
+    private byte[] receipt;
+    private List<byte[]> signatures;
+
+
+    public byte[] getData() {
+        if (data == null) {
+            return new byte[0];
+        }
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
 
     public int getIndex() {
         return index;

@@ -15,14 +15,8 @@ public class GossipPayloadDTO {
     private int messageType;
     private byte[] payload;
     private long nonce;
-
-    private boolean networkIdSet;
-    private boolean parentsSet;
-    private boolean payloadLengthSet;
-    private boolean messageTypeSet;
-    private boolean payloadSet;
-    private boolean nonceSet;
-
+    private byte[] messageHash;
+    private byte[] messageId;
 
     public String getDataAsHex() {
         return BaseEncoding.base16().encode(data);
@@ -90,51 +84,25 @@ public class GossipPayloadDTO {
         this.nonce = nonce;
     }
 
-    public boolean isNetworkIdSet() {
-        return networkIdSet;
+    public byte[] getMessageHash() {
+        if (messageHash == null) {
+            return new byte[0];
+        }
+        return messageHash;
     }
 
-    public void setNetworkIdSet(boolean networkIdSet) {
-        this.networkIdSet = networkIdSet;
+    public void setMessageHash(byte[] messageHash) {
+        this.messageHash = messageHash;
     }
 
-    public boolean isParentsSet() {
-        return parentsSet;
+    public byte[] getMessageId() {
+        if (messageId == null) {
+            return new byte[0];
+        }
+        return messageId;
     }
 
-    public void setParentsSet(boolean parentsSet) {
-        this.parentsSet = parentsSet;
-    }
-
-    public boolean isPayloadLengthSet() {
-        return payloadLengthSet;
-    }
-
-    public void setPayloadLengthSet(boolean payloadLengthSet) {
-        this.payloadLengthSet = payloadLengthSet;
-    }
-
-    public boolean isMessageTypeSet() {
-        return messageTypeSet;
-    }
-
-    public void setMessageTypeSet(boolean messageTypeSet) {
-        this.messageTypeSet = messageTypeSet;
-    }
-
-    public boolean isPayloadSet() {
-        return payloadSet;
-    }
-
-    public void setPayloadSet(boolean payloadSet) {
-        this.payloadSet = payloadSet;
-    }
-
-    public boolean isNonceSet() {
-        return nonceSet;
-    }
-
-    public void setNonceSet(boolean nonceSet) {
-        this.nonceSet = nonceSet;
+    public void setMessageId(byte[] messageId) {
+        this.messageId = messageId;
     }
 }
